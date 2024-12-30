@@ -1,5 +1,9 @@
+import 'dart:convert';
 import 'package:ecommerce_app/screens/auth/register.dart';
+import 'package:ecommerce_app/screens/home/homePage.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -9,6 +13,60 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  String? selectedRole; // Variable to store the selected role
+  final List<String> roles = ["Admin", "customer"]; // List of roles
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+
+  // Function to handle login
+ Future<void> loginUser() async {
+  const String apiUrl = 'http://10.0.2.2:3000/api/users/login'; // Backend URL
+  try {
+    final response = await http.post(
+      Uri.parse(apiUrl),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'email': _emailController.text,
+        'password': _passwordController.text,
+        'role': selectedRole, // 'admin' or 'user'
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      // Parse response data
+      final data = jsonDecode(response.body);
+
+      // Save token to SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('authToken', data['token']); // Ensure 'token' matches your backend key
+
+      print("Login successful: ${data['message']}");
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Login successful!")),
+      );
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+      } else {
+        // Handle errors from the server
+        final error = jsonDecode(response.body);
+        print("Error: ${error['message']}");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: ${error['message']}")),
+        );
+      }
+    } catch (e) {
+      // Error handling
+      print("Exception: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to connect to the server.")),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,9 +118,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const TextField(
-                      decoration: InputDecoration(
-                        hintText: "User Name Email",
+                    child: TextField(
+                      controller: _emailController,
+                      decoration: const InputDecoration(
+                        hintText: "Email",
                         border: InputBorder.none,
                         prefixIcon: Icon(Icons.person),
                       ),
@@ -76,33 +135,37 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const TextField(
+                    child: TextField(
+                      controller: _passwordController,
                       obscureText: true,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         hintText: "Password",
                         border: InputBorder.none,
                         prefixIcon: Icon(Icons.lock),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: GestureDetector(
-                      onTap: () {
-                        // Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(
-                        //     builder: (context) => const ForgotPasswordScreen(),
-                        //   ),
-                        // );
-                      },
-                      child: Text(
-                        "Forgot Password?",
-                        style: TextStyle(
-                          color: Colors.red[400],
-                          fontSize: 12,
-                        ),
+                  const SizedBox(height: 20),
+                  // Role Dropdown
+                  DropdownButtonFormField<String>(
+                    value: selectedRole,
+                    hint: const Text("Select Role"),
+                    items: roles
+                        .map((role) => DropdownMenuItem<String>(
+                              value: role,
+                              child: Text(role),
+                            ))
+                        .toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        selectedRole = value; // Update selected role
+                      });
+                    },
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
                       ),
                     ),
                   ),
@@ -120,7 +183,15 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     onPressed: () {
-                      // Connect to backend API for login here
+                      if (selectedRole == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text("Please select a role"),
+                          ),
+                        );
+                      } else {
+                        loginUser(); // Call the login function
+                      }
                     },
                     child: const Text(
                       "Login",
@@ -134,15 +205,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(" don't have account? "),
+                      const Text("Don't have an account? "),
                       GestureDetector(
                         onTap: () {
-                          // Navigator.push(
-                          //   context,
-                          //   MaterialPageRoute(
-                          //     builder: (context) => LoginScreen(),
-                          //   ),
-                          // );
+                          // Navigate to register screen
+                             Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const SignUpScreen()),
+                          );
                         },
                         child: const Text(
                           "Sign up",
