@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:ecommerce_app/screens/auth/register.dart';
 import 'package:ecommerce_app/screens/home/homePage.dart';
+import 'package:ecommerce_app/screens/home/homeScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -19,36 +20,37 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
 
   // Function to handle login
- Future<void> loginUser() async {
-  const String apiUrl = 'http://10.0.2.2:3000/api/users/login'; // Backend URL
-  try {
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': _emailController.text,
-        'password': _passwordController.text,
-        'role': selectedRole, // 'admin' or 'user'
-      }),
-    );
-
-    if (response.statusCode == 200) {
-      // Parse response data
-      final data = jsonDecode(response.body);
-
-      // Save token to SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('authToken', data['token']); // Ensure 'token' matches your backend key
-
-      print("Login successful: ${data['message']}");
-
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Login successful!")),
+  Future<void> loginUser() async {
+    const String apiUrl = 'http://10.0.2.2:3000/api/users/login'; // Backend URL
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': _emailController.text,
+          'password': _passwordController.text,
+          'role': selectedRole, // 'admin' or 'user'
+        }),
       );
+
+      if (response.statusCode == 200) {
+        // Parse response data
+        final data = jsonDecode(response.body);
+
+        // Save token to SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('authToken',
+            data['token']); // Ensure 'token' matches your backend key
+
+        print("Login successful: ${data['message']}");
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Login successful!")),
+        );
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => HomeScreen()),
         );
       } else {
         // Handle errors from the server
@@ -209,9 +211,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       GestureDetector(
                         onTap: () {
                           // Navigate to register screen
-                             Navigator.push(
+                          Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const SignUpScreen()),
+                            MaterialPageRoute(
+                                builder: (context) => const SignUpScreen()),
                           );
                         },
                         child: const Text(

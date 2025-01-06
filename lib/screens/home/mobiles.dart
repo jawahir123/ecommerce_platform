@@ -1,3 +1,5 @@
+import 'package:ecommerce_app/screens/cart/cart_screen.dart';
+import 'package:ecommerce_app/screens/products/productCard.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -10,6 +12,7 @@ class MobilesScreen extends StatefulWidget {
 class _MobilesScreenState extends State<MobilesScreen> {
   List<Map<String, dynamic>> mobiles = [];
   bool isLoading = true;
+  List<Map<String, dynamic>> cartItems = [];
 
   // Function to fetch products from the backend
   Future<void> fetchProducts(String categoryId) async {
@@ -19,7 +22,7 @@ class _MobilesScreenState extends State<MobilesScreen> {
 
     try {
       final response = await http
-          .get(Uri.parse('http://10.0.2.2:3000/api/products/$categoryId'));
+          .get(Uri.parse('http://10.0.2.2:3000/api/products/categoryID/$categoryId'));
 
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
@@ -29,7 +32,16 @@ class _MobilesScreenState extends State<MobilesScreen> {
 
           // Set the mobiles list with the fetched products
           setState(() {
-            mobiles = List<Map<String, dynamic>>.from(products);
+            mobiles = List<Map<String, dynamic>>.from(products.map((product) {
+              // Replace "localhost" with "10.0.2.2" in the image URL
+              if (product['image'] != null) {
+                product['image'] = product['image'].replaceFirst(
+                  'http://localhost:3000',
+                  'http://10.0.2.2:3000',
+                );
+              }
+              return product;
+            }));
             isLoading = false; // Set loading to false once data is fetched
           });
         } else {
@@ -50,6 +62,17 @@ class _MobilesScreenState extends State<MobilesScreen> {
         isLoading = false;
       });
     }
+  }
+
+  // Function to add product to the cart
+  void addToCart(Map<String, dynamic> product) {
+    setState(() {
+      cartItems.add({
+        ...product,
+        'quantity': 1, // Default quantity is 1
+      });
+    });
+    print('${product['name']} added to cart');
   }
 
   @override
@@ -117,62 +140,21 @@ class _MobilesScreenState extends State<MobilesScreen> {
                   crossAxisCount: 2,
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
-                  childAspectRatio: 0.7,
+                  childAspectRatio: 0.7, // Fixed aspect ratio for better UI
                 ),
                 itemCount: mobiles.length,
                 itemBuilder: (context, index) {
                   final mobile = mobiles[index];
-                  return Card(
-                    elevation: 5,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius:
-                                BorderRadius.vertical(top: Radius.circular(10)),
-                            child: Image.network(
-                              mobile['image'],
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Icon(Icons
-                                    .error); // Show error icon if image fails to load
-                              },
-                            ),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            mobile['name'],
-                            style: TextStyle(
-                                fontSize: 16, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Text(
-                            'Price: \$${mobile['price']}',
-                            style: TextStyle(
-                                fontSize: 14, color: Colors.grey[600]),
-                          ),
-                        ),
-                        Spacer(),
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: CircleAvatar(
-                              backgroundColor: Colors.black,
-                              child: Icon(Icons.add, color: Colors.white),
-                            ),
-                          ),
-                        ),
-                      ],
+                  return GestureDetector(
+                    onTap: () {
+                      showProductDialog(context, mobile);
+                    },
+                    child: ProductCard(
+                      imageUrl: mobile['image'],
+                      name: mobile['name'],
+                      price: mobile['price'] is int
+                          ? mobile['price'].toDouble() // Convert int to double
+                          : mobile['price'] ?? 0.0, // Fallback to 0.0 if null
                     ),
                   );
                 },
@@ -205,11 +187,85 @@ class _MobilesScreenState extends State<MobilesScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Icon(Icons.shopping_cart, color: Colors.white),
+              IconButton(
+                icon: Icon(Icons.shopping_cart, color: Colors.white),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => CartScreen(),
+                    ),
+                  );
+                },
+              ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  // Show product details dialog
+  void showProductDialog(BuildContext context, Map<String, dynamic> product) {
+    print('Product Data: $product');
+    print('Image URL: ${product['image']}');
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            product['name'] ?? 'Unnamed Product', // Fallback if name is null
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              children: [
+                Container(
+                  height: 150,
+                  width: 150,
+                  child: Image.network(
+                    product['image'] ?? 'https://via.placeholder.com/150',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      print('Error loading image: $error');
+                      return Icon(Icons.error);
+                    },
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  product['description'] ?? "No description available.",
+                  style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'Price: \$${product['price'] ?? 'N/A'}', // Fallback if price is null
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close dialog
+              },
+              child: Text("Close"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                addToCart(product); // Add to cart functionality
+                Navigator.pop(context); // Close dialog
+              },
+              child: Text("Add to Cart"),
+            ),
+          ],
+        );
+      },
     );
   }
 }
