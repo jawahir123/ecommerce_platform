@@ -6,6 +6,7 @@ import 'package:ecommerce_app/screens/home/mobiles.dart';
 import 'package:ecommerce_app/screens/home/message.dart';
 import 'package:ecommerce_app/screens/home/profileScreen.dart';
 import 'package:flutter/material.dart';
+import 'package:ecommerce_app/models/cart_item.dart'; // Import CartItem model
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -16,12 +17,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0; // Track the selected index for BottomNavigationBar
+  List<CartItem> cartItems = []; // Manage cartItems list here
 
   // List of screens for each tab
   final List<Widget> _screens = [
     HomePage(),
     MySearchBAR(),
-    CartScreen(),
+    CartScreen(), // Placeholder, will be updated dynamically
     MessageScreen(),
     ProfileScreen(),
   ];
@@ -32,8 +34,41 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // Function to add an item to the cart
+  void addToCart(Map<String, dynamic> product) {
+    // Check if the product is already in the cart
+    final existingIndex = cartItems.indexWhere(
+      (item) => item.name == product['name'],
+    );
+
+    if (existingIndex >= 0) {
+      // If the product exists, increase its quantity
+      setState(() {
+        cartItems[existingIndex].quantity++;
+      });
+    } else {
+      // If the product doesn't exist, add it to the cart
+      setState(() {
+        cartItems.add(
+          CartItem(
+            name: product['name'],
+            price: product['price'] is int
+                ? product['price'].toDouble() // Convert int to double
+                : product['price'] ?? 0.0, // Fallback to 0.0 if null
+            imageUrl: product['image'],
+          ),
+        );
+      });
+    }
+
+    print('${product['name']} added to cart');
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Update the CartScreen with the current cartItems list
+    _screens[2] = CartScreen();
+
     return Scaffold(
       body: _screens[_selectedIndex], // Display the selected screen
       bottomNavigationBar: BottomNavigationBar(

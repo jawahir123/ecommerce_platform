@@ -1,6 +1,7 @@
-import 'package:ecommerce_app/screens/cart/cart_screen.dart';
-import 'package:ecommerce_app/screens/products/productCard.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:ecommerce_app/controllers/cart_controller.dart';
+import 'package:ecommerce_app/screens/products/productCard.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -12,7 +13,7 @@ class MobilesScreen extends StatefulWidget {
 class _MobilesScreenState extends State<MobilesScreen> {
   List<Map<String, dynamic>> mobiles = [];
   bool isLoading = true;
-  List<Map<String, dynamic>> cartItems = [];
+  final CartController cartController = Get.find(); // Get the CartController instance
 
   // Function to fetch products from the backend
   Future<void> fetchProducts(String categoryId) async {
@@ -62,17 +63,6 @@ class _MobilesScreenState extends State<MobilesScreen> {
         isLoading = false;
       });
     }
-  }
-
-  // Function to add product to the cart
-  void addToCart(Map<String, dynamic> product) {
-    setState(() {
-      cartItems.add({
-        ...product,
-        'quantity': 1, // Default quantity is 1
-      });
-    });
-    print('${product['name']} added to cart');
   }
 
   @override
@@ -160,48 +150,6 @@ class _MobilesScreenState extends State<MobilesScreen> {
                 },
               ),
       ),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 8,
-                spreadRadius: 2,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Add To Cart',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              IconButton(
-                icon: Icon(Icons.shopping_cart, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CartScreen(),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
@@ -258,7 +206,7 @@ class _MobilesScreenState extends State<MobilesScreen> {
             ),
             ElevatedButton(
               onPressed: () {
-                addToCart(product); // Add to cart functionality
+                cartController.addToCart(product); // Add to cart functionality
                 Navigator.pop(context); // Close dialog
               },
               child: Text("Add to Cart"),
