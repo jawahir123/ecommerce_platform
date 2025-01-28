@@ -14,7 +14,8 @@ class MobilesScreen extends StatefulWidget {
 class _MobilesScreenState extends State<MobilesScreen> {
   List<Map<String, dynamic>> mobiles = [];
   bool isLoading = true;
-  final CartController cartController = Get.find(); // Get the CartController instance
+  final CartController cartController =
+      Get.find(); // Get the CartController instance
   String userId = ""; // Dynamic userId
 
   // Function to resolve URLs dynamically based on platform
@@ -25,7 +26,8 @@ class _MobilesScreenState extends State<MobilesScreen> {
       } else if (GetPlatform.isIOS) {
         return url; // iOS uses localhost
       } else {
-        return url.replaceFirst('localhost', '192.168.x.x'); // Replace with your machine's IP
+        return url.replaceFirst(
+            'localhost', '192.168.x.x'); // Replace with your machine's IP
       }
     }
     return url;
@@ -33,7 +35,6 @@ class _MobilesScreenState extends State<MobilesScreen> {
 
   // Function to fetch userId dynamically
   Future<void> loadUserId() async {
-    // Assume userId is saved in SharedPreferences
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       userId = prefs.getString('userId') ?? '';
@@ -55,7 +56,8 @@ class _MobilesScreenState extends State<MobilesScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse(resolveUrl('http://localhost:3000/api/products/categoryID/$categoryId')),
+        Uri.parse(resolveUrl(
+            'http://localhost:3000/api/products/categoryID/$categoryId')),
       );
 
       if (response.statusCode == 200) {
@@ -235,10 +237,8 @@ class _MobilesScreenState extends State<MobilesScreen> {
                   if (userId.isEmpty) {
                     throw Exception('User not logged in.');
                   }
-                  await cartController.addToCart(
-                    userId,
-                    product,
-                  );
+                  await cartController
+                      .addToCart(product); // Pass the product map
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                         content: Text('${product['name']} added to cart!')),
