@@ -16,7 +16,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  String? _selectedRole; // Holds the selected role value
 
   Future<void> registerUser() async {
     const String apiUrl = 'http://10.0.2.2:3000/api/users/register';
@@ -28,7 +27,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
           'fullname': _fullNameController.text,
           'email': _emailController.text,
           'password': _passwordController.text,
-          'role': _selectedRole, // Include the role in the request
         }),
       );
 
@@ -75,10 +73,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
             alignment: Alignment.center,
             child: SingleChildScrollView(
               child: Container(
-                width: MediaQuery.of(context).size.width *
-                    0.9, // 90% of screen width
-                padding:
-                    const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+                width: MediaQuery.of(context).size.width * 0.9, // 90% of screen width
+                padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
                 decoration: BoxDecoration(
                   color: Colors.grey[200], // Light gray background for the card
                   borderRadius: BorderRadius.circular(20), // Rounded corners
@@ -150,41 +146,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         },
                       ),
                       const SizedBox(height: 20),
-                      // Role Dropdown
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: DropdownButtonFormField<String>(
-                          value: _selectedRole,
-                          decoration: const InputDecoration(
-                            border: InputBorder.none,
-                            prefixIcon: Icon(Icons.person_outline),
-                            hintText: "Select Role",
-                          ),
-                          items: const [
-                            DropdownMenuItem(
-                                value: "customer", child: Text("Customer")),
-                            DropdownMenuItem(
-                                value: "admin", child: Text("Admin")),
-                          ],
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedRole = value;
-                            });
-                          },
-                          validator: (value) =>
-                              value == null ? 'Please select a role' : null,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
                       // Sign Up Button
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color(0xFF7B3FF6), // Purple color
+                          backgroundColor: const Color(0xFF7B3FF6), // Purple color
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
@@ -212,9 +177,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           GestureDetector(
                             onTap: () {
                               Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const LoginScreen()),
-                          );
+                                context,
+                                MaterialPageRoute(
+                                    builder: (context) => const LoginScreen()),
+                              );
                             },
                             child: const Text(
                               "Login",

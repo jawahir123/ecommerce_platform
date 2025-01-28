@@ -16,72 +16,39 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0; // Track the selected index for BottomNavigationBar
-  List<CartItem> cartItems = []; // Manage cartItems list here
+  int _selectedIndex = 0;
 
-  // List of screens for each tab
   final List<Widget> _screens = [
     HomePage(),
     MySearchBAR(),
-    CartScreen(), // Placeholder, will be updated dynamically
+    CartScreen(), // Use CartScreen with state management or a constructor
     MessageScreen(),
     ProfileScreen(),
   ];
 
   void _onItemTapped(int index) {
     setState(() {
-      _selectedIndex = index; // Update the selected index
+      _selectedIndex = index;
     });
-  }
-
-  // Function to add an item to the cart
-  void addToCart(Map<String, dynamic> product) {
-    // Check if the product is already in the cart
-    final existingIndex = cartItems.indexWhere(
-      (item) => item.name == product['name'],
-    );
-
-    if (existingIndex >= 0) {
-      // If the product exists, increase its quantity
-      setState(() {
-        cartItems[existingIndex].quantity++;
-      });
-    } else {
-      // If the product doesn't exist, add it to the cart
-      setState(() {
-        cartItems.add(
-          CartItem(
-            name: product['name'],
-            price: product['price'] is int
-                ? product['price'].toDouble() // Convert int to double
-                : product['price'] ?? 0.0, // Fallback to 0.0 if null
-            imageUrl: product['image'],
-          ),
-        );
-      });
-    }
-
-    print('${product['name']} added to cart');
   }
 
   @override
   Widget build(BuildContext context) {
-    // Update the CartScreen with the current cartItems list
-    _screens[2] = CartScreen();
-
     return Scaffold(
-      body: _screens[_selectedIndex], // Display the selected screen
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
-        onTap: _onItemTapped, // Handle tap on bottom nav items
+        onTap: _onItemTapped,
         items: [
           BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: "search"),
+          BottomNavigationBarItem(icon: Icon(Icons.search), label: "Search"),
           BottomNavigationBarItem(icon: Icon(Icons.card_travel), label: "Cart"),
           BottomNavigationBarItem(icon: Icon(Icons.message), label: "Message"),
-          BottomNavigationBarItem(
-              icon: Icon(Icons.person_2_outlined), label: "Profile"),
+          BottomNavigationBarItem(icon: Icon(Icons.person_2_outlined), label: "Profile"),
         ],
       ),
     );

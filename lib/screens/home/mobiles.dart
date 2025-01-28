@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ecommerce_app/controllers/cart_controller.dart';
 import 'package:ecommerce_app/screens/products/productCard.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -14,6 +15,37 @@ class _MobilesScreenState extends State<MobilesScreen> {
   List<Map<String, dynamic>> mobiles = [];
   bool isLoading = true;
   final CartController cartController = Get.find(); // Get the CartController instance
+  String userId = ""; // Dynamic userId
+
+  // Function to resolve URLs dynamically based on platform
+  String resolveUrl(String url) {
+    if (url.contains('localhost')) {
+      if (GetPlatform.isAndroid) {
+        return url.replaceFirst('localhost', '10.0.2.2'); // Android Emulator
+      } else if (GetPlatform.isIOS) {
+        return url; // iOS uses localhost
+      } else {
+        return url.replaceFirst('localhost', '192.168.x.x'); // Replace with your machine's IP
+      }
+    }
+    return url;
+  }
+
+  // Function to fetch userId dynamically
+  Future<void> loadUserId() async {
+    // Assume userId is saved in SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      userId = prefs.getString('userId') ?? '';
+    });
+
+    if (userId.isEmpty) {
+      print('Error: User ID not found. Please log in.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Please log in to use the app.')),
+      );
+    }
+  }
 
   // Function to fetch products from the backend
   Future<void> fetchProducts(String categoryId) async {
@@ -22,8 +54,9 @@ class _MobilesScreenState extends State<MobilesScreen> {
     });
 
     try {
-      final response = await http
-          .get(Uri.parse('http://10.0.2.2:3000/api/products/categoryID/$categoryId'));
+      final response = await http.get(
+        Uri.parse(resolveUrl('http://localhost:3000/api/products/categoryID/$categoryId')),
+      );
 
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
@@ -31,19 +64,14 @@ class _MobilesScreenState extends State<MobilesScreen> {
         if (data is Map<String, dynamic> && data['products'] != null) {
           List<dynamic> products = data['products'];
 
-          // Set the mobiles list with the fetched products
           setState(() {
             mobiles = List<Map<String, dynamic>>.from(products.map((product) {
-              // Replace "localhost" with "10.0.2.2" in the image URL
               if (product['image'] != null) {
-                product['image'] = product['image'].replaceFirst(
-                  'http://localhost:3000',
-                  'http://10.0.2.2:3000',
-                );
+                product['image'] = resolveUrl(product['image']);
               }
               return product;
             }));
-            isLoading = false; // Set loading to false once data is fetched
+            isLoading = false;
           });
         } else {
           print('Error: No products found in the response.');
@@ -68,6 +96,7 @@ class _MobilesScreenState extends State<MobilesScreen> {
   @override
   void initState() {
     super.initState();
+    loadUserId(); // Load user ID dynamically
     fetchProducts('6770428ee220c228e4440550'); // Pass categoryId here
   }
 
@@ -143,8 +172,8 @@ class _MobilesScreenState extends State<MobilesScreen> {
                       imageUrl: mobile['image'],
                       name: mobile['name'],
                       price: mobile['price'] is int
-                          ? mobile['price'].toDouble() // Convert int to double
-                          : mobile['price'] ?? 0.0, // Fallback to 0.0 if null
+                          ? mobile['price'].toDouble()
+                          : mobile['price'] ?? 0.0,
                     ),
                   );
                 },
@@ -155,9 +184,6 @@ class _MobilesScreenState extends State<MobilesScreen> {
 
   // Show product details dialog
   void showProductDialog(BuildContext context, Map<String, dynamic> product) {
-    print('Product Data: $product');
-    print('Image URL: ${product['image']}');
-
     showDialog(
       context: context,
       builder: (context) {
@@ -166,7 +192,7 @@ class _MobilesScreenState extends State<MobilesScreen> {
             borderRadius: BorderRadius.circular(20),
           ),
           title: Text(
-            product['name'] ?? 'Unnamed Product', // Fallback if name is null
+            product['name'] ?? 'Unnamed Product',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
           content: SingleChildScrollView(
@@ -176,10 +202,9 @@ class _MobilesScreenState extends State<MobilesScreen> {
                   height: 150,
                   width: 150,
                   child: Image.network(
-                    product['image'] ?? 'https://via.placeholder.com/150',
+                    resolveUrl(product['image']),
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
-                      print('Error loading image: $error');
                       return Icon(Icons.error);
                     },
                   ),
@@ -191,7 +216,7 @@ class _MobilesScreenState extends State<MobilesScreen> {
                 ),
                 SizedBox(height: 16),
                 Text(
-                  'Price: \$${product['price'] ?? 'N/A'}', // Fallback if price is null
+                  'Price: \$${product['price'] ?? 'N/A'}',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -205,9 +230,25 @@ class _MobilesScreenState extends State<MobilesScreen> {
               child: Text("Close"),
             ),
             ElevatedButton(
-              onPressed: () {
-                cartController.addToCart(product); // Add to cart functionality
-                Navigator.pop(context); // Close dialog
+              onPressed: () async {
+                try {
+                  if (userId.isEmpty) {
+                    throw Exception('User not logged in.');
+                  }
+                  await cartController.addToCart(
+                    userId,
+                    product,
+                  );
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                        content: Text('${product['name']} added to cart!')),
+                  );
+                  Navigator.pop(context); // Close dialog
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Failed to add to cart: $e')),
+                  );
+                }
               },
               child: Text("Add to Cart"),
             ),

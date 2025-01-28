@@ -22,103 +22,106 @@ class CartScreen extends StatelessWidget {
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
               )
-            : ListView.builder(
-                itemCount: cartItems.length,
-                itemBuilder: (ctx, index) {
-                  final cartItem = cartItems[index];
-                  return Card(
-                    margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                    child: ListTile(
-                      leading: Image.network(
-                        cartItem.imageUrl,
-                        width: 50,
-                        height: 50,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Icon(Icons.error);
-                        },
-                      ),
-                      title: Text(cartItem.name),
-                      subtitle: Text('\$${cartItem.price.toStringAsFixed(2)}'),
-                      trailing: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            'Total: \$${(cartItem.price * cartItem.quantity).toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
+            : Column(
+                children: [
+                  // Expand ListView to take up available space
+                  Expanded(
+                    child: ListView.builder(
+                      itemCount: cartItems.length,
+                      itemBuilder: (ctx, index) {
+                        final cartItem = cartItems[index];
+                        return Card(
+                          margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          child: ListTile(
+                            leading: Image.network(
+                              cartItem.imageUrl,
+                              width: 50,
+                              height: 50,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Icon(Icons.error);
+                              },
                             ),
+                            title: Text(cartItem.name),
+                            subtitle: Text('\$${cartItem.price.toStringAsFixed(2)}'),
+                            trailing: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Text(
+                                  'Total: \$${(cartItem.price * cartItem.quantity).toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(Icons.remove),
+                                      onPressed: cartItem.quantity > 1
+                                          ? () async {
+                                              await cartController.updateQuantityBackend(
+                                                cartItem.id,
+                                                cartItem.quantity - 1,
+                                              );
+                                            }
+                                          : null,
+                                    ),
+                                    Text(cartItem.quantity.toString()),
+                                    IconButton(
+                                      icon: Icon(Icons.add),
+                                      onPressed: () async {
+                                        await cartController.updateQuantityBackend(
+                                          cartItem.id,
+                                          cartItem.quantity + 1,
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                            onLongPress: () async {
+                              await cartController.removeFromCartBackend(cartItem.id);
+                            },
                           ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: Icon(Icons.remove),
-                                onPressed: cartItem.quantity > 1
-                                    ? () => cartController.updateQuantity(index, cartItem.quantity - 1)
-                                    : null,
-                              ),
-                              Text(cartItem.quantity.toString()),
-                              IconButton(
-                                icon: Icon(Icons.add),
-                                onPressed: () => cartController.updateQuantity(index, cartItem.quantity + 1),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      onLongPress: () {
-                        cartController.removeFromCart(index); // Remove item on long press
+                        );
                       },
                     ),
-                  );
-                },
+                  ),
+                  // Footer for total amount and checkout button
+                  Container(
+                    padding: const EdgeInsets.all(16.0),
+                    color: Colors.white,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Obx(() {
+                          return Text(
+                            'Total: \$${cartController.totalAmount.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        }),
+                        ElevatedButton(
+                          onPressed: () {
+                            // Implement checkout functionality
+                            print('Proceeding to checkout...');
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue, // Background color
+                          ),
+                          child: Text('Checkout'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               );
       }),
-      bottomNavigationBar: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.black,
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 8,
-                spreadRadius: 2,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          padding: EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Obx(() {
-                return Text(
-                  'Total: \$${cartController.totalAmount.toStringAsFixed(2)}',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                );
-              }),
-              ElevatedButton(
-                onPressed: () {
-                  // Implement checkout functionality
-                  print('Proceeding to checkout...');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue, // Background color
-                ),
-                child: Text('Checkout'),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }
