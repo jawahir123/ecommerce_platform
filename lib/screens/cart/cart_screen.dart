@@ -21,17 +21,53 @@ class _CartScreenState extends State<CartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Cart'),
-        backgroundColor: Color(0xFF7B3FF6),
-      ),
       body: Column(
         children: [
-          // Expanded ensures ListView takes available space
+          // ✅ Custom AppBar Like MobileScreen
+          Container(
+            width: double.infinity,
+            height: 200,
+            decoration: BoxDecoration(
+              color: Color(0xFF7B3FF6),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(30),
+                bottomRight: Radius.circular(30),
+              ),
+            ),
+            child: Padding(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // 🔙 Back Button
+                  IconButton(
+                    icon: Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () {},
+                  ),
+
+                  // 🛒 Title - "Cart"
+                  Text(
+                    'Cart',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+
+                  // ❤️ Wishlist Icon (Placeholder)
+                  IconButton(
+                    icon: Icon(Icons.favorite_border, color: Colors.white),
+                    onPressed: () {},
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ✅ Cart Items
           Expanded(
             child: Obx(() {
-              print("🛑 Cart Items: ${cartController.cartItems}");
-
               final cartItems = cartController.cartItems;
 
               return cartItems.isEmpty
@@ -73,11 +109,10 @@ class _CartScreenState extends State<CartScreen> {
                                           await cartController
                                               .updateQuantityBackend(
                                             cartItem.id,
-                                            cartItem.quantity -
-                                                1, // Decrease quantity
+                                            cartItem.quantity - 1,
                                           );
                                         }
-                                      : null, // Disable if quantity is already 1
+                                      : null,
                                 ),
 
                                 // 🟢 Display Quantity
@@ -90,8 +125,7 @@ class _CartScreenState extends State<CartScreen> {
                                   onPressed: () async {
                                     await cartController.updateQuantityBackend(
                                       cartItem.id,
-                                      cartItem.quantity +
-                                          1, // Increase quantity
+                                      cartItem.quantity + 1,
                                     );
                                   },
                                 ),
@@ -104,9 +138,8 @@ class _CartScreenState extends State<CartScreen> {
                                         .getUserId(); // Fetch User ID
                                     await cartController.cancelItem(
                                       cartItem.id, // Cart item ID
-                                      cartItem
-                                          .productId, // Product ID (ensure this exists)
-                                      userId!, // User ID (non-null)
+                                      cartItem.productId, // Product ID
+                                      userId!,
                                     );
 
                                     // Show snackbar confirmation
@@ -125,6 +158,8 @@ class _CartScreenState extends State<CartScreen> {
                     );
             }),
           ),
+
+          // ✅ Checkout Section (Total & Button)
           Container(
             padding: const EdgeInsets.all(16.0),
             color: Colors.white,
@@ -143,8 +178,7 @@ class _CartScreenState extends State<CartScreen> {
                 }),
                 ElevatedButton(
                   onPressed: () {
-                    Get.to(
-                        () => CheckoutScreen()); // Navigate to CheckoutScreen
+                    Get.to(() => CheckoutScreen());
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue, // Background color

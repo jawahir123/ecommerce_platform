@@ -1,9 +1,9 @@
 import 'package:ecommerce_app/controllers/cart_controller.dart';
 import 'package:carousel_slider/carousel_slider.dart';
-import 'package:ecommerce_app/screens/home/clothes.dart';
-import 'package:ecommerce_app/screens/home/laptops.dart';
-import 'package:ecommerce_app/screens/home/mobiles.dart';
-import 'package:ecommerce_app/screens/home/watches.dart';
+import 'package:ecommerce_app/screens/categories/clothes.dart';
+import 'package:ecommerce_app/screens/categories/laptops.dart';
+import 'package:ecommerce_app/screens/categories/mobiles.dart';
+import 'package:ecommerce_app/screens/cart/watches.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
@@ -216,33 +216,25 @@ class _HomePageState extends State<HomePage> {
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       chipsWidget(
-                          imgurl: "assets/images/3.png",
-                          title: "Clothes",
-                          onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => ClothesScreen()))),
+                        imgurl: "assets/images/3.png",
+                        title: "Clothes",
+                        onTap: () => Get.to(ClothesScreen()),
+                      ),
                       chipsWidget(
-                          imgurl: "assets/images/1.png",
-                          title: "Phones",
-                          onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => MobilesScreen()))),
+                        imgurl: "assets/images/1.png",
+                        title: "Phones",
+                        onTap: () => Get.to(MobilesScreen()),
+                      ),
                       chipsWidget(
-                          imgurl: "assets/images/2.png",
-                          title: "Watches",
-                          onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => Watches()))),
+                        imgurl: "assets/images/2.png",
+                        title: "Watches",
+                        onTap: () => Get.to(WatchesScreen()),
+                      ),
                       chipsWidget(
-                          imgurl: "assets/images/Laptop.png",
-                          title: "Laptops",
-                          onTap: () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => LaptopsScreen()))),
+                        imgurl: "assets/images/Laptop.png",
+                        title: "Laptops",
+                        onTap: () => Get.to(LaptopsScreen()),
+                      ),
                     ],
                   ),
                 ),

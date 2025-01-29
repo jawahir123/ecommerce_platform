@@ -3,6 +3,7 @@ import 'package:ecommerce_app/screens/auth/register.dart';
 import 'package:ecommerce_app/screens/home/homeScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 
 class LoginScreen extends StatefulWidget {
@@ -19,61 +20,63 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // Function to handle login
   Future<void> loginUser() async {
-  const String apiUrl = 'http://10.0.2.2:3000/api/users/login'; // Backend URL
+    const String apiUrl = 'http://10.0.2.2:3000/api/users/login'; // Backend URL
 
-  setState(() {
-    isLoading = true; // Show loading indicator
-  });
-
-  try {
-    final response = await http.post(
-      Uri.parse(apiUrl),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': _emailController.text.trim(),
-        'password': _passwordController.text.trim(),
-      }),
-    );
-
-    print('Response body: ${response.body}'); // Debugging the response
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-
-      // Validate token and user ID
-      if (data['token'] != null && data['user'] != null && data['user']['id'] != null) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('authToken', data['token']); // Save token
-        await prefs.setString('userId', data['user']['id']); // Save user ID
-
-        print("Login successful: ${data['user']['fullname']}");
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Login successful!")),
-        );
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => HomeScreen()),
-        );
-      } else {
-        throw Exception("Invalid response: Missing token or userId");
-      }
-    } else {
-      final error = jsonDecode(response.body);
-      throw Exception(error['message']);
-    }
-  } catch (e) {
-    print("Error: $e");
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Error: $e")),
-    );
-  } finally {
     setState(() {
-      isLoading = false; // Hide loading indicator
+      isLoading = true; // Show loading indicator
     });
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': _emailController.text.trim(),
+          'password': _passwordController.text.trim(),
+        }),
+      );
+
+      print('Response body: ${response.body}'); // Debugging the response
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        // Validate token and user ID
+        if (data['token'] != null &&
+            data['user'] != null &&
+            data['user']['id'] != null) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('authToken', data['token']); // Save token
+          await prefs.setString('userId', data['user']['id']); // Save user ID
+
+          print("Login successful: ${data['user']['fullname']}");
+          Get.snackbar(
+            "Success", "Login successful!",
+            snackPosition: SnackPosition.BOTTOM, // Position of the Snackbar
+            backgroundColor: Colors.green,
+            colorText: Colors.white,
+          );
+
+          Get.offAll(() =>
+              HomeScreen()); // Clears all previous screens and navigates to HomeScreen
+        } else {
+          throw Exception("Invalid response: Missing token or userId");
+        }
+      } else {
+        final error = jsonDecode(response.body);
+        throw Exception(error['message']);
+      }
+    } catch (e) {
+      print("Error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    } finally {
+      setState(() {
+        isLoading = false; // Hide loading indicator
+      });
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -93,7 +96,8 @@ class _LoginScreenState extends State<LoginScreen> {
           Align(
             alignment: Alignment.center,
             child: Container(
-              width: MediaQuery.of(context).size.width * 0.9, // 90% of screen width
+              width: MediaQuery.of(context).size.width *
+                  0.9, // 90% of screen width
               padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
               decoration: BoxDecoration(
                 color: Colors.grey[200], // Light gray background for the card
@@ -166,7 +170,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         horizontal: 50,
                       ),
                     ),
-                    onPressed: isLoading ? null : loginUser, // Disable button while loading
+                    onPressed: isLoading
+                        ? null
+                        : loginUser, // Disable button while loading
                     child: isLoading
                         ? CircularProgressIndicator(color: Colors.white)
                         : const Text(
