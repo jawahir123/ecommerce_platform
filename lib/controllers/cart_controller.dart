@@ -33,7 +33,7 @@ class CartController extends GetxController {
     try {
       final userId = await getUserId();
       if (userId == null || userId.isEmpty) {
-        print('❌ Error: User ID not found.');
+        print('Error: User ID not found.');
         return;
       }
 
@@ -58,10 +58,10 @@ class CartController extends GetxController {
           cartItems.clear();
         }
       } else {
-        print('❌ Failed to fetch cart: ${response.statusCode}');
+        print('Failed to fetch cart: ${response.statusCode}');
       }
     } catch (e) {
-      print('❌ Error fetching cart: $e');
+      print(' Error fetching cart: $e');
     }
   }
 
@@ -85,10 +85,10 @@ class CartController extends GetxController {
       if (response.statusCode == 200 || response.statusCode == 201) {
         await fetchCart(); // ✅ Refresh cart after update
       } else {
-        print('❌ Failed to add product to cart: ${response.body}');
+        print('Failed to add product to cart: ${response.body}');
       }
     } catch (e) {
-      print('❌ Error adding to cart: $e');
+      print('Error adding to cart: $e');
     }
   }
 
@@ -111,10 +111,10 @@ class CartController extends GetxController {
       if (response.statusCode == 200) {
         await fetchCart(); // ✅ Refresh cart after deletion
       } else {
-        print('❌ Failed to remove item: ${response.body}');
+        print('Failed to remove item: ${response.body}');
       }
     } catch (e) {
-      print('❌ Error removing item: $e');
+      print('Error removing item: $e');
     }
   }
 
@@ -133,10 +133,10 @@ class CartController extends GetxController {
       if (response.statusCode == 200) {
         await fetchCart(); // ✅ Refresh cart after update
       } else {
-        print('❌ Failed to update quantity: ${response.body}');
+        print('Failed to update quantity: ${response.body}');
       }
     } catch (e) {
-      print('❌ Error updating quantity: $e');
+      print('Error updating quantity: $e');
     }
   }
 

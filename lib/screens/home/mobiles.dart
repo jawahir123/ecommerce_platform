@@ -200,8 +200,8 @@ class _MobilesScreenState extends State<MobilesScreen> {
             child: Column(
               children: [
                 Container(
-                  height: 150,
-                  width: 150,
+                  height: 200,
+                  width: 200,
                   child: Image.network(
                     resolveUrl(product['image']),
                     fit: BoxFit.cover,

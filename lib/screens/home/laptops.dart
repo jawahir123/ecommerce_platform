@@ -4,47 +4,26 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 
-class ClothesScreen extends StatefulWidget {
+class LaptopsScreen extends StatefulWidget {
   @override
-  _ClothesScreenState createState() => _ClothesScreenState();
+  _LaptopsScreenState createState() => _LaptopsScreenState();
 }
 
-class _ClothesScreenState extends State<ClothesScreen> {
-  final CartController cartController = Get.find(); // ✅ Get CartController
-  List<Map<String, dynamic>> clothes = [];
+class _LaptopsScreenState extends State<LaptopsScreen> {
+  final CartController cartController = Get.find();
+  List<Map<String, dynamic>> laptops = [];
   bool isLoading = true;
-  String? userId; // ✅ Store user ID
 
-  @override
-  void initState() {
-    super.initState();
-    loadUserId();
-    fetchProducts('6772e0408dc3342f6981137f'); // Pass categoryId here
-  }
-
-  // ✅ Load User ID from SharedPreferences
-  Future<void> loadUserId() async {
-    final prefs = await SharedPreferences.getInstance();
+  // ✅ Fetch Laptops (Change Category ID for Laptops)
+  Future<void> fetchLaptops() async {
     setState(() {
-      userId = prefs.getString('userId');
-    });
-
-    if (userId == null || userId!.isEmpty) {
-      Get.snackbar("Error", "User ID not found. Please log in.");
-    }
-  }
-
-  // ✅ Fetch products from the backend
-  Future<void> fetchProducts(String categoryId) async {
-    setState(() {
-      isLoading = true; // Start loading
+      isLoading = true;
     });
 
     try {
       final response = await http
-          .get(Uri.parse('http://10.0.2.2:3000/api/products/$categoryId'));
+          .get(Uri.parse('http://10.0.2.2:3000/api/products/677e1e829afc4f705d10177f')); // 🔥 Replace with Laptops Category ID
 
       if (response.statusCode == 200) {
         var data = json.decode(response.body);
@@ -53,7 +32,8 @@ class _ClothesScreenState extends State<ClothesScreen> {
           List<dynamic> products = data['products'];
 
           setState(() {
-            clothes = List<Map<String, dynamic>>.from(products.map((product) {
+            laptops = List<Map<String, dynamic>>.from(products.map((product) {
+              // Convert image URL to work in Android Emulator
               if (product['image'] != null) {
                 product['image'] = product['image'].replaceFirst(
                   'http://localhost:3000',
@@ -65,26 +45,32 @@ class _ClothesScreenState extends State<ClothesScreen> {
             isLoading = false;
           });
         } else {
-          print('⚠️ No products found in the response.');
+          print('❌ Error: No laptops found in the response.');
           setState(() {
             isLoading = false;
           });
         }
       } else {
-        print('❌ Failed to load products. Status code: ${response.statusCode}');
+        print('❌ Failed to load laptops. Status code: ${response.statusCode}');
         setState(() {
           isLoading = false;
         });
       }
     } catch (e) {
-      print('❌ Error fetching products: $e');
+      print('❌ Error fetching laptops: $e');
       setState(() {
         isLoading = false;
       });
     }
   }
 
-  // ✅ Show product details & Add to Cart
+  @override
+  void initState() {
+    super.initState();
+    fetchLaptops();
+  }
+
+  // ✅ Show Laptop Details
   void showProductDialog(BuildContext context, Map<String, dynamic> product) {
     showDialog(
       context: context,
@@ -107,7 +93,7 @@ class _ClothesScreenState extends State<ClothesScreen> {
                     product['image'] ?? 'https://via.placeholder.com/150',
                     fit: BoxFit.cover,
                     errorBuilder: (context, error, stackTrace) {
-                      return Icon(Icons.error, color: Colors.red);
+                      return Icon(Icons.error);
                     },
                   ),
                 ),
@@ -133,13 +119,13 @@ class _ClothesScreenState extends State<ClothesScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                if (userId == null || userId!.isEmpty) {
-                  Get.snackbar("Error", "User ID not found. Please log in.");
-                  return;
-                }
-
                 try {
-                  await cartController.addToCart(product);
+                  await cartController.addToCart({
+                    "_id": product['_id'],
+                    "name": product['name'],
+                    "price": product['price'],
+                    "image": product['image'],
+                  });
                   Get.snackbar("Success", "${product['name']} added to cart!");
                   Navigator.pop(context);
                 } catch (e) {
@@ -185,7 +171,7 @@ class _ClothesScreenState extends State<ClothesScreen> {
                         },
                       ),
                       Text(
-                        'Clothes',
+                        'Laptops',
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -215,19 +201,19 @@ class _ClothesScreenState extends State<ClothesScreen> {
                   mainAxisSpacing: 10,
                   childAspectRatio: 0.7,
                 ),
-                itemCount: clothes.length,
+                itemCount: laptops.length,
                 itemBuilder: (context, index) {
-                  final cloth = clothes[index];
+                  final laptop = laptops[index];
                   return GestureDetector(
                     onTap: () {
-                      showProductDialog(context, cloth);
+                      showProductDialog(context, laptop);
                     },
                     child: ProductCard(
-                      imageUrl: cloth['image'],
-                      name: cloth['name'],
-                      price: cloth['price'] is int
-                          ? cloth['price'].toDouble()
-                          : cloth['price'] ?? 0.0,
+                      imageUrl: laptop['image'],
+                      name: laptop['name'],
+                      price: laptop['price'] is int
+                          ? laptop['price'].toDouble()
+                          : laptop['price'] ?? 0.0,
                     ),
                   );
                 },

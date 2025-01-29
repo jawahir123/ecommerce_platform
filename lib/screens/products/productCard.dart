@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 class ProductCard extends StatelessWidget {
   final String imageUrl;
   final String name;
@@ -20,17 +21,18 @@ class ProductCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
-            child: Image.network(
-              imageUrl ?? 'https://via.placeholder.com/150', // Fallback image
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: 150,
-              errorBuilder: (context, error, stackTrace) {
-                print('Error loading image: $error');
-                return Icon(Icons.error, size: 40, color: Colors.red);
-              },
+          // ✅ Image Container with `BoxFit.contain`
+          Container(
+            height: 150, // Adjusted height to prevent overflow
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(10)),
+              image: DecorationImage(
+                image: NetworkImage(imageUrl),
+                fit: BoxFit.contain, // ✅ Ensures full image visibility
+                onError: (error, stackTrace) =>
+                    AssetImage('assets/images/placeholder.png'),
+              ),
             ),
           ),
           Padding(
@@ -38,13 +40,18 @@ class ProductCard extends StatelessWidget {
             child: Text(
               name,
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
             ),
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Text(
               'Price: \$${price.toStringAsFixed(2)}',
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green),
             ),
           ),
           Padding(
@@ -52,8 +59,8 @@ class ProductCard extends StatelessWidget {
             child: Align(
               alignment: Alignment.bottomRight,
               child: CircleAvatar(
-                backgroundColor: Colors.black,
-                child: Icon(Icons.add, color: Colors.white),
+                backgroundColor: Colors.purple,
+                child: Icon(Icons.shopping_cart, color: Colors.white),
               ),
             ),
           ),
