@@ -56,8 +56,7 @@ class _MobilesScreenState extends State<MobilesScreen> {
 
     try {
       final response = await http.get(
-        Uri.parse(resolveUrl(
-            'http://localhost:3000/api/products/categoryID/$categoryId')),
+        Uri.parse(resolveUrl('http://localhost:3000/api/products/$categoryId')),
       );
 
       if (response.statusCode == 200) {

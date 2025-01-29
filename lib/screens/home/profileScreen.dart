@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:convert'; // For JSON decoding
-import 'package:http/http.dart' as http; // For API calls
-import 'package:shared_preferences/shared_preferences.dart'; // For storing and retrieving the token
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends StatefulWidget {
   ProfileScreen({Key? key}) : super(key: key);
@@ -11,20 +11,24 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  Map<String, dynamic>? profileData; // To store user/admin profile data
-  bool isLoading = true; // Loading state
+  Map<String, dynamic>? profileData;
+  List<dynamic> orderHistory = []; // ✅ Store user's order history
+  bool isLoading = true;
+  String? userId;
 
   @override
   void initState() {
     super.initState();
-    fetchProfile(); // Fetch profile on screen load
+    fetchProfile();
   }
 
+  // ✅ Get stored authentication token
   Future<String?> getAuthToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('authToken');
   }
 
+  // ✅ Fetch profile data
   Future<void> fetchProfile() async {
     try {
       final token = await getAuthToken();
@@ -36,23 +40,51 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
 
       if (response.statusCode == 200) {
-        // Parse response data
+        final data = jsonDecode(response.body);
         setState(() {
-          profileData = jsonDecode(response.body); // Update profileData
-          isLoading = false; // Set loading to false
+          profileData = data;
+          userId = data['id'];
         });
-        print("Profile fetched successfully: $profileData");
+
+        if (userId != null) {
+          fetchUserOrders(userId!);
+        }
       } else {
-        setState(() {
-          isLoading = false; // Stop loading even if profile fetch fails
-        });
-        print("Failed to fetch profile: ${response.body}");
+        print("❌ Failed to fetch profile: ${response.body}");
       }
     } catch (e) {
+      print("❌ Error fetching profile: $e");
+    } finally {
       setState(() {
-        isLoading = false; // Stop loading if error occurs
+        isLoading = false;
       });
-      print("Error fetching profile: $e");
+    }
+  }
+
+  // ✅ Fetch User Orders
+  Future<void> fetchUserOrders(String userId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://10.0.2.2:3000/api/order/user/$userId'),
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data != null && data['success'] == true && data['orders'] != null) {
+          setState(() {
+            orderHistory.clear();
+            orderHistory.addAll(data['orders']);
+          });
+          print("✅ Orders Loaded: ${orderHistory.length}");
+        } else {
+          print("⚠️ No orders found");
+        }
+      } else {
+        print(
+            "❌ Failed to fetch orders: ${response.statusCode} ${response.body}");
+      }
+    } catch (e) {
+      print("❌ Error fetching orders: $e");
     }
   }
 
@@ -61,9 +93,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: const Color.fromARGB(255, 111, 26, 222),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator()) // Show loader
+          ? const Center(child: CircularProgressIndicator())
           : profileData != null
-              ? buildProfileContent() // Build profile content if data exists
+              ? buildProfileContent()
               : const Center(
                   child: Text(
                     "Failed to load profile",
@@ -73,6 +105,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // ✅ Build User Profile UI
   Widget buildProfileContent() {
     String fullname = profileData?['fullname'] ?? 'No fullname';
     String email = profileData?['email'] ?? 'No Email';
@@ -86,12 +119,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               CircleAvatar(
                 radius: 50,
-                backgroundImage: AssetImage(
-                    'assets/images/kabo.png'), // Replace with user's profile image
+                backgroundImage: AssetImage('assets/images/kabo.png'),
               ),
               const SizedBox(height: 10),
               Text(
-                fullname, // User's name
+                fullname,
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -99,41 +131,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               Text(
-                email, // User's email
+                email,
                 style: const TextStyle(
                   fontSize: 16,
                   color: Colors.white,
-                ),
-              ),
-              Text(
-                "Role: $role", // User's role
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontStyle: FontStyle.italic,
-                  color: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () {
-                  // Navigate to Edit Profile
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.pinkAccent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: const Text(
-                  'Edit Profile',
-                  style: TextStyle(color: Colors.white),
                 ),
               ),
             ],
           ),
         ),
         const SizedBox(height: 20),
-        // Show dynamic content based on role
+
+        // ✅ Display Order History
         Expanded(
           child: Container(
             decoration: const BoxDecoration(
@@ -143,61 +152,59 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 topRight: Radius.circular(30),
               ),
             ),
-            child: role == 'user'
-                ? buildUserContent()
-                : role == 'admin'
-                    ? buildAdminContent()
-                    : const Center(
-                        child: Text("No additional content"),
-                      ),
+            child: role == 'customer'
+                ? buildOrderHistory()
+                : const Center(child: Text("No additional content")),
           ),
         ),
       ],
     );
   }
 
-  Widget buildUserContent() {
-    List<dynamic> orders = profileData?['additionalInfo']['orders'] ?? [];
+  // ✅ Display Order History without Order ID
+  Widget buildOrderHistory() {
+    if (orderHistory.isEmpty) {
+      return Center(
+        child: Text("No orders found."),
+      );
+    }
 
     return ListView.builder(
       padding: const EdgeInsets.all(20),
-      itemCount: orders.length,
+      itemCount: orderHistory.length,
       itemBuilder: (context, index) {
-        final order = orders[index];
-        return ListTile(
-          leading: const Icon(Icons.shopping_bag,
-              color: Color.fromARGB(255, 165, 36, 188)),
-          title: Text(
-            order['orderId'],
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
-          subtitle: Text(order['status']),
-          trailing: Text(
-            "\$${order['amount']}",
-            style: const TextStyle(fontWeight: FontWeight.bold),
-          ),
-        );
-      },
-    );
-  }
+        final order = orderHistory[index];
 
-  Widget buildAdminContent() {
-    List<dynamic> businesses =
-        profileData?['additionalInfo']['managedBusinesses'] ?? [];
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(20),
-      itemCount: businesses.length,
-      itemBuilder: (context, index) {
-        final business = businesses[index];
-        return ListTile(
-          leading: const Icon(Icons.business,
-              color: Color.fromARGB(255, 165, 36, 188)),
-          title: Text(
-            business['name'],
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        return Card(
+          elevation: 3,
+          margin: EdgeInsets.symmetric(vertical: 8),
+          child: ExpansionTile(
+            leading: Icon(Icons.shopping_cart, color: Colors.blue),
+            title: Text(
+              "Total Price: \$${order['total_price']}", // ✅ Removed Order ID
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text("Status: ${order['status']}"),
+                Text("Date: ${order['createdAt']}"),
+              ],
+            ),
+            children: [
+              Column(
+                children: List.generate(order['items'].length, (i) {
+                  var item = order['items'][i];
+                  return ListTile(
+                    leading: Icon(Icons.shopping_bag, color: Colors.green),
+                    title: Text("${item['product_id']['name']}"),
+                    subtitle: Text(
+                        "Quantity: ${item['quantity']} - Price: \$${item['price']}"),
+                  );
+                }),
+              ),
+            ],
           ),
-          subtitle: Text("License: ${business['license']}"),
         );
       },
     );

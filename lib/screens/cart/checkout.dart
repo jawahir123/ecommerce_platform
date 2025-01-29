@@ -1,3 +1,4 @@
+import 'package:ecommerce_app/screens/home/homeScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ecommerce_app/controllers/cart_controller.dart';
@@ -13,8 +14,8 @@ class CheckoutScreen extends StatefulWidget {
 class _CheckoutScreenState extends State<CheckoutScreen> {
   final CartController cartController = Get.find();
   final TextEditingController _addressController = TextEditingController();
-  String userId = "";
   var isLoading = false.obs; // Observable for loading state
+  String userId = "";
 
   @override
   void initState() {
@@ -22,74 +23,121 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
     loadUserId();
   }
 
-  // Load User ID from SharedPreferences
+  // ✅ Load User ID from SharedPreferences
   Future<void> loadUserId() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       userId = prefs.getString('userId') ?? '';
     });
+
+    if (userId.isEmpty) {
+      Get.snackbar("Error", "User ID not found. Please log in.");
+    }
   }
 
-  // Function to place order
+  // ✅ Function to place order
   Future<void> placeOrder() async {
     if (_addressController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter your shipping address')),
-      );
+      Get.snackbar("Error", "Please enter your shipping address.");
       return;
     }
 
     if (cartController.cartItems.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Your cart is empty')),
-      );
+      Get.snackbar("Error", "Your cart is empty.");
       return;
     }
 
+    final userId =
+        await cartController.getUserId(); // ✅ Ensure user ID is fetched
+    if (userId == null || userId.isEmpty) {
+      Get.snackbar("Error", "User ID is missing. Please log in.");
+      return;
+    }
+
+    // ✅ Correct JSON Payload
     final orderData = {
-      "user_id": userId, // Matches backend schema
+      "user_id": userId, // 🔥 Fixed user_id
       "items": cartController.cartItems.map((item) {
         return {
-          "product_id": item.id, // Matches backend schema
+          "product_id": item.productId, // 🔥 Ensure correct field
           "quantity": item.quantity,
           "price": item.price,
         };
       }).toList(),
-      "totalPrice":
-          cartController.totalAmount, // Matches `totalPrice` in schema
+      "total_price": cartController.totalAmount, // 🔥 Fixed total_price
       "shipping_address": _addressController.text,
       "payment_method": "Cash on Delivery",
       "status": "Pending",
     };
 
     try {
-      isLoading.value = true; // Start loading
+      isLoading.value = true; // ✅ Show loading indicator
       final response = await http.post(
-        Uri.parse('http://10.0.2.2:3000/api/orders/create'),
+        Uri.parse('http://10.0.2.2:3000/api/order/create'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(orderData),
       );
 
+      print("🛑 Place Order Response: ${response.body}"); // ✅ Debug response
+
       if (response.statusCode == 201) {
-        cartController.cartItems.clear(); // Clear the cart
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Order placed successfully!')),
-        );
-        Get.offAllNamed('/orderSuccess'); // Navigate to success page
+        cartController.cartItems.clear(); // ✅ Clear cart after success
+        _showSuccessPopup(); // ✅ Show Thank You Popup
       } else {
-        print('Failed to place order: ${response.body}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Order placement failed')),
-        );
+        print('❌ Order failed: ${response.body}');
+        Get.snackbar("Error", "Order placement failed.");
       }
     } catch (e) {
-      print('Error placing order: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Something went wrong! Please try again.')),
-      );
+      print('❌ Error placing order: $e');
+      Get.snackbar("Error", "Something went wrong. Please try again.");
     } finally {
-      isLoading.value = false; // Stop loading
+      isLoading.value = false; // ✅ Hide loading indicator
     }
+  }
+
+  // ✅ Show success popup instead of navigating to another screen
+  void _showSuccessPopup() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          title: Center(
+            child: Column(
+              children: [
+                Icon(Icons.check_circle, color: Colors.green, size: 60),
+                SizedBox(height: 10),
+                Text("Thank You!",
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ),
+          content: Text(
+            "Your order has been placed successfully.\nWe appreciate your shopping with us!",
+            textAlign: TextAlign.center,
+          ),
+          actions: [
+            Center(
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context); // Close popup
+                  Get.offAll(() => HomeScreen()); // ✅ Redirect to HomeScreen
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: Text("OK"),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -99,11 +147,12 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
           AppBar(title: Text("Checkout"), backgroundColor: Color(0xFF7B3FF6)),
       body: Obx(
         () => isLoading.value
-            ? Center(child: CircularProgressIndicator()) // Loading indicator
+            ? Center(child: CircularProgressIndicator()) // 🔥 Loading indicator
             : Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Column(
                   children: [
+                    // ✅ Cart Items List
                     Expanded(
                       child: ListView.builder(
                         itemCount: cartController.cartItems.length,
@@ -131,6 +180,8 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                         },
                       ),
                     ),
+
+                    // ✅ Shipping Address Input
                     TextField(
                       controller: _addressController,
                       decoration: InputDecoration(
@@ -139,11 +190,16 @@ class _CheckoutScreenState extends State<CheckoutScreen> {
                       ),
                     ),
                     SizedBox(height: 20),
+
+                    // ✅ Total Price
                     Obx(() => Text(
-                        "Total: \$${cartController.totalAmount.toStringAsFixed(2)}",
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold))),
+                          "Total: \$${cartController.totalAmount.toStringAsFixed(2)}",
+                          style: TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold),
+                        )),
                     SizedBox(height: 20),
+
+                    // ✅ Place Order Button
                     ElevatedButton(
                       onPressed: placeOrder,
                       style: ElevatedButton.styleFrom(
